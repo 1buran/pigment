@@ -1,56 +1,13 @@
-package pigment
+package lexers
 
 import (
 	"log"
 	"strings"
-
-	"github.com/muesli/termenv"
 )
-
-const (
-	INIT = iota
-	WS
-	OBJECT
-	VALUE
-	ARRAY
-	STRING
-	NUMBER
-	TRUE
-	FALSE
-	NULL
-)
-
-type Token int
-
-func (v Token) String() string {
-	return []string{"Init", "Whitespace", "Object", "Value", "Array", "String", "Number",
-		"True", "False", "Null"}[v]
-}
-
-// Styler detects whether the current key value is need to be styled.
-// Here could be anything you wanted: a regual expression matching
-// or literal matching or something else. You may compared by:
-// k - key (JSON field)
-// v - value (JSON field value)
-// t - lexer token
-//
-// Take a look at the test for examples.
-type Styler func(k, v string, t Token) (bool, termenv.Style)
-
-// Formatter checks whether any custom format to key value should be applied.
-// Here could be anything related to value changing: apply custom format
-// or replace/add/delete something special words or by use regular expression.
-// You may use the same params:
-// k - key (JSON field)
-// v - value (JSON field value)
-// t - lexer token
-//
-// Take a look at the test for examples.
-type Formatter func(k, v string, t Token) (bool, string)
 
 // Tiny toy lexer which is purpose is getting from JSON meaningful parts: tokens,
 // fields and values and bring the ability to highlight something or format/override.
-func JSONLexer(s string, styler Styler, formatter Formatter) string {
+func JSONLexer(s string, pg Pigmentizer) string {
 	var (
 		v               Token
 		buf, out        strings.Builder
@@ -63,13 +20,13 @@ func JSONLexer(s string, styler Styler, formatter Formatter) string {
 	// user may add there any wanted logic. This function is shortcut for invoke
 	// formatter & styler functions.
 	applyCustomFormatStyle := func(key, bufString string, token Token) string {
-		customFormat, formatted := formatter(key, bufString, token)
+		customFormat, formatted := pg.Format(key, bufString, token)
 
 		if customFormat {
 			bufString = formatted
 		}
 
-		customStyle, style := styler(key, bufString, token)
+		customStyle, style := pg.Style(key, bufString, token)
 		if customStyle {
 			bufString = style.Styled(bufString)
 		}

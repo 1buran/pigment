@@ -1,4 +1,4 @@
-package pigment
+package lexers
 
 import (
 	"os"
@@ -9,73 +9,77 @@ import (
 	"github.com/muesli/termenv"
 )
 
+var (
+	output = termenv.NewOutput(os.Stdout, termenv.WithProfile(termenv.TrueColor))
+
+	strColor   = output.Color("75")
+	numColor   = output.Color("159")
+	nullColor  = output.Color("87")
+	trueColor  = output.Color("47")
+	falseColor = output.Color("212")
+
+	wrnColor = output.Color("226")
+	infColor = output.Color("121")
+	errColor = output.Color("212")
+
+	msgColor   = output.Color("183")
+	lemonColor = output.Color("192")
+)
+
+type testPigment int
+
+func (tpg testPigment) Style(k, v string, t Token) (bool, termenv.Style) {
+	switch t {
+	case NULL:
+		return true, termenv.Style{}.Foreground(nullColor).Bold()
+	case NUMBER:
+		return true, termenv.Style{}.Foreground(numColor)
+	case TRUE:
+		return true, termenv.Style{}.Foreground(trueColor)
+	case FALSE:
+		return true, termenv.Style{}.Foreground(falseColor).Bold()
+	case STRING:
+		switch k { // highlight special JSON fields (literal matching)
+		case `"msg"`:
+			return true, termenv.Style{}.Foreground(msgColor)
+		case `"date"`, `"ts"`, `"dateTime"`, `"timestamp"`:
+			return true, termenv.Style{}.Foreground(lemonColor)
+		}
+
+		switch v { // highlight special JSON values (literal matching)
+		case `"Warn"`, `"Warning"`:
+			return true, termenv.Style{}.Foreground(wrnColor)
+		case `"Info"`, `"Information"`:
+			return true, termenv.Style{}.Foreground(infColor)
+		case `"Error"`, `"Failed"`, `"High"`:
+			return true, termenv.Style{}.Foreground(errColor)
+		default:
+			return true, termenv.Style{}.Foreground(strColor)
+		}
+	}
+	return false, termenv.Style{}
+}
+
+func (tpg testPigment) Format(k, v string, t Token) (bool, string) {
+	switch k {
+	case `"Priority"`:
+		return true, `"High"` // override field value
+	case `"text"`:
+		r, _ := strconv.Unquote(v)
+		return true, `"AA` + r + `BB"`
+	}
+
+	switch t {
+	case NULL:
+		return true, "NULL"
+	}
+	return false, v
+}
+
 func TestJSONLexer(t *testing.T) {
 	t.Parallel()
 
-	var (
-		output = termenv.NewOutput(os.Stdout, termenv.WithProfile(termenv.TrueColor))
-
-		strColor   = output.Color("75")
-		numColor   = output.Color("159")
-		nullColor  = output.Color("87")
-		trueColor  = output.Color("47")
-		falseColor = output.Color("212")
-
-		wrnColor = output.Color("226")
-		infColor = output.Color("121")
-		errColor = output.Color("212")
-
-		msgColor   = output.Color("183")
-		lemonColor = output.Color("192")
-
-		styler Styler = func(k, v string, t Token) (bool, termenv.Style) {
-			switch t {
-			case NULL:
-				return true, termenv.Style{}.Foreground(nullColor).Bold()
-			case NUMBER:
-				return true, termenv.Style{}.Foreground(numColor)
-			case TRUE:
-				return true, termenv.Style{}.Foreground(trueColor)
-			case FALSE:
-				return true, termenv.Style{}.Foreground(falseColor).Bold()
-			case STRING:
-				switch k { // highlight special JSON fields (literal matching)
-				case `"msg"`:
-					return true, termenv.Style{}.Foreground(msgColor)
-				case `"date"`, `"ts"`, `"dateTime"`, `"timestamp"`:
-					return true, termenv.Style{}.Foreground(lemonColor)
-				}
-
-				switch v { // highlight special JSON values (literal matching)
-				case `"Warn"`, `"Warning"`:
-					return true, termenv.Style{}.Foreground(wrnColor)
-				case `"Info"`, `"Information"`:
-					return true, termenv.Style{}.Foreground(infColor)
-				case `"Error"`, `"Failed"`, `"High"`:
-					return true, termenv.Style{}.Foreground(errColor)
-				default:
-					return true, termenv.Style{}.Foreground(strColor)
-				}
-			}
-			return false, termenv.Style{}
-		}
-
-		formatter Formatter = func(k, v string, t Token) (bool, string) {
-			switch k {
-			case `"Priority"`:
-				return true, `"High"` // override field value
-			case `"text"`:
-				r, _ := strconv.Unquote(v)
-				return true, `"AA` + r + `BB"`
-			}
-
-			switch t {
-			case NULL:
-				return true, "NULL"
-			}
-			return false, v
-		}
-	)
+	var tpg testPigment
 
 	s := `{ "Priority": "low", "text": "Hello\t world!", "msg": "Wake up, Neo...",
             "date": "2024-07-19", "time": "16:55:03", "ts": "2024-07-19T16:11:00+00:00",
@@ -83,7 +87,7 @@ func TestJSONLexer(t *testing.T) {
             "count": 10230, "notifyLevel": "Information", "errorMsg": null,
             "array": [ "string", 12, true, false, null] }`
 
-	r := JSONLexer(s, styler, formatter)
+	r := JSONLexer(s, tpg)
 
 	t.Log(r)
 
