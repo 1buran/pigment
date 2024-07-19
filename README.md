@@ -102,3 +102,98 @@ func main() {
 	fmt.Println(r)
 }
 ```
+
+### How does it work
+
+There is an interface `Pigmentizer`, this is core of this module: it defines two functions,
+which will used for colorize input string of data.
+
+The first one is `Style(k, v string, t Token) (bool, termenv.Style)` function. It uses
+to check whether the part of input string should be styled. You may use literal matching
+or matching by regexp or token matching for create all you need conditions. If the part
+is matched rules, then the function return `true` and `termenv.Style` which will be applied
+to this part of processed data, otherwise it returns `false, termenv.Style{}`.
+
+The second is `Format(k, v string, t Token) (bool, string)` function. Its purpose the same,
+but in context of string content: you may use it for override some values of json or
+correct the formatting whatever you wanted.
+
+Here are some examples (full code in tests). A `Pigmentizer.Style` function:
+
+```go
+func (tpg testPigment) Style(k, v string, t Token) (bool, termenv.Style) {
+	switch t {
+	case NULL:
+		return true, termenv.Style{}.Foreground(nullColor).Bold()
+	case NUMBER:
+		return true, termenv.Style{}.Foreground(numColor)
+	case TRUE:
+		return true, termenv.Style{}.Foreground(trueColor)
+	case FALSE:
+		return true, termenv.Style{}.Foreground(falseColor).Bold()
+	case STRING:
+		switch k { // highlight special JSON fields (literal matching)
+		case `"msg"`:
+			return true, termenv.Style{}.Foreground(msgColor)
+		case `"date"`, `"ts"`, `"dateTime"`, `"timestamp"`:
+			return true, termenv.Style{}.Foreground(lemonColor)
+		}
+
+		switch v { // highlight special JSON values (literal matching)
+		case `"Warn"`, `"Warning"`:
+			return true, termenv.Style{}.Foreground(wrnColor)
+		case `"Info"`, `"Information"`:
+			return true, termenv.Style{}.Foreground(infColor)
+		case `"Error"`, `"Failed"`, `"High"`:
+			return true, termenv.Style{}.Foreground(errColor)
+		default:
+			return true, termenv.Style{}.Foreground(strColor)
+		}
+	}
+	return false, termenv.Style{}
+}
+
+```
+
+it does:
+
+- apply `nullColor` for every `null` value found
+- apply `numColor` for every number found
+- apply `trueColor` for every `true` boolean
+- apply `falseColor` for every `false` boolean
+- for every string found:
+  - apply `msgColor` for value of json field `msg`
+  - apply `lemonColor` for value of json fields: `date`, `ts`, `dateTime`, `timestamp`
+  - apply `wrnColor` for field values matched these words: `Warn`, `Warning`
+  - apply `infColor` for field values matched these words: `Info`, `Information`
+  - apply `errColor` for field values matched these words: `Error`, `Failed`, `High`
+  - apply `strColor` for other values (default color for all strings)
+
+again, you may write any other logic, e.g. colorize all date time meaning fields,
+that matched by regex: `(?i).*(date|time|ts).*)`.
+
+A `Pigmentizer.Format` function:
+
+```go
+func (tpg testPigment) Format(k, v string, t Token) (bool, string) {
+	switch k {
+	case `"Priority"`:
+		return true, `"High"` // override field value
+	case `"text"`:
+		r, _ := strconv.Unquote(v)
+		return true, `"AA` + r + `BB"`
+	}
+
+	switch t {
+	case NULL:
+		return true, "NULL"
+	}
+	return false, v
+}
+```
+
+it does:
+
+- replace the original value of field `Priority` with `High`
+- add prefix `AA` and sufix `BB` to the value of field `text`
+- convert all `null` values to upper case
