@@ -12,6 +12,9 @@ for colorize JSON data and make something like 'hard' formatting - not just re-i
 the fields, i needed remove some escape sequences, applied pretty printing
 for some special json field values etc.
 
+Pigment may be useful for internal / personal tools, scripts whatever when you don't want
+add more heavy, but of course, more mature and featured, libs.
+
 ## Features
 
 Currently implemented:
@@ -22,3 +25,8 @@ Currently implemented:
 Both features based on node field name or field value, lexer token. That means you may code
 any business logic of colorizing / formatting: literal or regex matrching of passed json
 field name or value or lexer token etc. You may find examples of usage in tests.
+
+## Contributing
+
+New lexers are welcome! Please take a look at the json lexer, as start point for writing
+a new one. Please do not forget write tests along with the code.
