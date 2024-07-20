@@ -13,17 +13,20 @@ the fields, i needed remove some escape sequences, applied pretty printing
 for some special json field values etc.
 
 Pigment may be useful for internal / personal tools, scripts whatever when you don't want
-add more heavy, but of course, more mature and featured, libs.
+add more heavy, but of course, more mature and featured, libs. However, it can offer
+**more styling freedom** than others: custom fg/bg color, bold, underline, etc everything what
+[termenv](https://github.com/muesli/termenv) supports.
 
 ## Features
 
 Currently implemented:
 
+- JSON lexer
 - colorize JSON with [termenv](https://github.com/muesli/termenv)
 - apply custom formatters
 
 Both features based on node field name or field value, lexer token. That means you may code
-any business logic of colorizing / formatting: literal or regex matrching of passed json
+any business logic of colorizing / formatting: literal or regex matching of passed json
 field name or value or lexer token etc. You may find examples of usage in tests.
 
 ## Contributing
@@ -33,13 +36,19 @@ a new one. Please do not forget write tests along with the code.
 
 ## Usage
 
+Add to project:
+
+```
+go get github.com/1buran/pigment
+```
+
 As i said this lib is pretty flexible, for example you may want colorize every even string
 by green and every odd by the bright green color, this is funny,
 it's looks like a python (snake), here is the output of test with this trick:
 
 ![python](https://i.imgur.com/8s7QMyd.png)
 
-You may found the code in `pigment_test.go` file, but for clarity (how to use this module)
+You may find the code in `pigment_test.go` file, but for clarity (how to use this module)
 I am attaching the code of a simple script that does the same thing:
 
 ```go
@@ -110,13 +119,13 @@ which will used for colorize input string of data.
 
 The first one is `Style(k, v string, t Token) (bool, termenv.Style)` function. It uses
 to check whether the part of input string should be styled. You may use literal matching
-or matching by regexp or token matching for create all you need conditions. If the part
-is matched rules, then the function return `true` and `termenv.Style` which will be applied
+or matching by regexp or token matching for create all you needed conditions. If the part
+is matched rules, then the function return `true` and `termenv.Style` which should be applied
 to this part of processed data, otherwise it returns `false, termenv.Style{}`.
 
 The second is `Format(k, v string, t Token) (bool, string)` function. Its purpose the same,
 but in context of string content: you may use it for override some values of json or
-correct the formatting whatever you wanted.
+correcting the formatting or what else you needed.
 
 Here are some examples (full code in tests). A `Pigmentizer.Style` function:
 
@@ -169,8 +178,8 @@ it does:
   - apply `errColor` for field values matched these words: `Error`, `Failed`, `High`
   - apply `strColor` for other values (default color for all strings)
 
-again, you may write any other logic, e.g. colorize all date time meaning fields,
-that matched by regex: `(?i).*(date|time|ts).*)`.
+again, you may write any other logic e.g. colorize all date time meaning fields,
+that matched by regex: `(?i).*(date|time|ts).*)` etc.
 
 A `Pigmentizer.Format` function:
 
