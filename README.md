@@ -1,6 +1,7 @@
 # pigment - tiny toy colorizer
 
 [![codecov](https://codecov.io/gh/1buran/pigment/graph/badge.svg?token=3F7HTBT028)](https://codecov.io/gh/1buran/pigment)
+[![Go Reference](https://pkg.go.dev/badge/github.com/1buran/pigment.svg)](https://pkg.go.dev/github.com/1buran/pigment)
 [![goreportcard](https://goreportcard.com/badge/github.com/1buran/pigment)](https://goreportcard.com/report/github.com/1buran/pigment)
 
 ![Main demo](https://i.imgur.com/ojdMg7W.png)
